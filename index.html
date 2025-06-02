@@ -92,7 +92,8 @@
       case 'apple':
         return `http://maps.apple.com/?q=${lat},${lon}`;
       case 'waze':
-        return `waze://?ll=${lat},${lon}&navigate=yes`;
+        // Updated to universal HTTPS link for better compatibility
+        return `https://waze.com/ul?ll=${lat},${lon}&navigate=yes`;
       case 'geo':
       default:
         return `geo:${lat},${lon}?q=${lat},${lon}(My%20Location)`;
@@ -147,7 +148,11 @@
     status.textContent = 'Getting your location...';
     accuracyText.textContent = '';
 
-    navigator.geolocation.getCurrentPosition(handleLocationSuccess, handleLocationError);
+    navigator.geolocation.getCurrentPosition(handleLocationSuccess, handleLocationError, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    });
   });
 
   mapAppSelect.addEventListener('change', updateShareLinks);
