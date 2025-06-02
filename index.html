@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Share Your Location</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 1rem;
+      max-width: 480px;
+      margin: auto;
+      text-align: center;
+    }
+    button, select, a.share-btn {
+      font-size: 1rem;
+      padding: 0.6rem 1rem;
+      margin: 0.5rem 0;
+      display: inline-block;
+      cursor: pointer;
+      border-radius: 6px;
+      border: 1px solid #888;
+      background: #f8f8f8;
+      text-decoration: none;
+      color: #222;
+    }
+    a.share-btn {
+      width: 90%;
+      display: block;
+    }
+    select {
+      width: 100%;
+      max-width: 300px;
+    }
+    #status {
+      margin-top: 1rem;
+      font-size: 0.95rem;
+    }
+    #accuracy {
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+    .warn {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📍 Share Your Location</h1>
+
+  <button id="getLocationBtn">Get My Location</button>
+
+  <div id="chooseApp" style="display:none;">
+    <label for="mapAppSelect">Choose which map app link to share:</label>
+    <select id="mapAppSelect">
+      <option value="geo">Generic (Android geo: link)</option>
+      <option value="google">Google Maps</option>
+      <option value="apple">Apple Maps</option>
+      <option value="waze">Waze</option>
+    </select>
+  </div>
+
+  <div id="shareSection" style="display:none; margin-top:1rem;">
+    <h3>Share your location via:</h3>
+    <a id="whatsapp" class="share-btn" href="#" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+    <a id="sms" class="share-btn" href="#" target="_blank" rel="noopener noreferrer">SMS</a>
+    <a id="email" class="share-btn" href="#" target="_blank" rel="noopener noreferrer">Email</a>
+    <a id="telegram" class="share-btn" href="#" target="_blank" rel="noopener noreferrer">Telegram</a>
+  </div>
+
+  <p id="status"></p>
+  <p id="accuracy"></p>
+
+<script>
+  let currentLat = null;
+  let currentLon = null;
+  let currentAccuracy = null;
+
+  const status = document.getElementById('status');
+  const accuracyText = document.getElementById('accuracy');
+  const getLocationBtn = document.getElementById('getLocationBtn');
+  const chooseApp = document.getElementById('chooseApp');
+  const mapAppSelect = document.getElementById('mapAppSelect');
+  const shareSection = document.getElementById('shareSection');
+
+  function generateMapLink(app, lat, lon) {
+    switch(app) {
+      case 'google':
+        return `https://maps.google.com/?q=${lat},${lon}`;
+      case 'apple':
+        return `http://maps.apple.com/?q=${lat},${lon}`;
+      case 'waze':
+        return `waze://?ll=${lat},${lon}&navigate=yes`;
+      case 'geo':
+      default:
+        return `geo:${lat},${lon}?q=${lat},${lon}(My%20Location)`;
+    }
+  }
+
+  function updateShareLinks() {
+    if (currentLat === null || currentLon === null || currentAccuracy === null) return;
+
+    const selectedApp = mapAppSelect.value;
+    const mapLink = generateMapLink(selectedApp, currentLat, currentLon);
+    const encodedMapLink = encodeURIComponent(mapLink);
+
+    const message = `Here's my location: ${mapLink}`;
+
+    document.getElementById('whatsapp').href = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    document.getElementById('sms').href = `sms:?body=${encodeURIComponent(message)}`;
+    document.getElementById('email').href = `mailto:?subject=My%20Location&body=${encodeURIComponent(message)}`;
+    document.getElementById('telegram').href = `https://t.me/share/url?url=${encodedMapLink}&text=${encodeURIComponent('My location')}`;
+  }
+
+  function handleLocationSuccess(pos) {
+    currentLat = pos.coords.latitude.toFixed(6);
+    currentLon = pos.coords.longitude.toFixed(6);
+    currentAccuracy = Math.round(pos.coords.accuracy);
+
+    status.textContent = `Location: ${currentLat}, ${currentLon}`;
+    accuracyText.textContent = `Accuracy: ±${currentAccuracy} meters`;
+
+    if (currentAccuracy > 100) {
+      accuracyText.classList.add('warn');
+      accuracyText.textContent += " ⚠️ Too inaccurate. Try moving outside.";
+      shareSection.style.display = 'none';
+    } else {
+      accuracyText.classList.remove('warn');
+      chooseApp.style.display = 'block';
+      shareSection.style.display = 'block';
+      updateShareLinks();
+    }
+  }
+
+  function handleLocationError(err) {
+    status.textContent = "⚠️ Couldn't get your location. Make sure GPS is on.";
+  }
+
+  getLocationBtn.addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      status.textContent = 'Geolocation is not supported by your browser.';
+      return;
+    }
+
+    status.textContent = 'Getting your location...';
+    accuracyText.textContent = '';
+
+    navigator.geolocation.getCurrentPosition(handleLocationSuccess, handleLocationError);
+  });
+
+  mapAppSelect.addEventListener('change', updateShareLinks);
+</script>
+
+</body>
+</html>
